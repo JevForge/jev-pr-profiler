@@ -36431,6 +36431,53 @@ async function collectPullDiffSignals(pullNumber, client, options = {}) {
   return summarizeDiffFiles(toDiffFiles(files.slice(0, maxFiles)));
 }
 
+// src/collectors/changed-paths.ts
+var ChangedPathObjectSchema = external_exports.object({
+  filename: external_exports.string().min(1).max(512),
+  status: external_exports.string().min(1).max(32).optional(),
+  additions: external_exports.number().int().nonnegative().optional(),
+  deletions: external_exports.number().int().nonnegative().optional(),
+  changes: external_exports.number().int().nonnegative().optional(),
+  previous_filename: external_exports.string().max(512).optional()
+});
+function parseChangedPaths(raw) {
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => {
+        if (typeof item === "string") {
+          return DiffFileSchema.parse({
+            filename: item,
+            status: "modified",
+            additions: 0,
+            deletions: 0
+          });
+        }
+        const obj = ChangedPathObjectSchema.parse(item);
+        return DiffFileSchema.parse({
+          filename: obj.filename,
+          status: obj.status ?? "modified",
+          additions: obj.additions ?? 0,
+          deletions: obj.deletions ?? 0,
+          changes: obj.changes,
+          previous_filename: obj.previous_filename
+        });
+      });
+    }
+  } catch {
+  }
+  return trimmed.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean).map(
+    (filename) => DiffFileSchema.parse({
+      filename,
+      status: "modified",
+      additions: 0,
+      deletions: 0
+    })
+  );
+}
+
 // src/collectors/security-findings.ts
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
@@ -52393,10 +52440,7 @@ async function main() {
   const include_incidents = parseBoolean(core.getInput("include_incidents") || void 0, true);
   let diff = emptyDiffSignals();
   if (changedPathsRaw.trim()) {
-    const paths = parseStringList(changedPathsRaw);
-    diff = summarizeDiffFiles(
-      toDiffFiles(paths.map((filename) => ({ filename, status: "modified", additions: 0, deletions: 0 })))
-    );
+    diff = summarizeDiffFiles(parseChangedPaths(changedPathsRaw));
   } else if (collected.metadata.number && octokit) {
     try {
       diff = await collectPullDiffSignals(collected.metadata.number, {

@@ -1,6 +1,6 @@
 {
   "name": "jev-pr-profiler",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Evaluate pull request risk with Jev and expose review depth plus recommended checks to CI.",
   "private": true,
   "type": "module",
