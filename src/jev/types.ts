@@ -1,4 +1,4 @@
-import type { JevProviderId } from '../schemas/enums.js';
+import type { JevProviderId, RiskLevel } from '../schemas/enums.js';
 import type { PrEvidence, ProfilerDecision } from '../schemas/profiler.js';
 
 export interface JevEvaluationState {
@@ -7,6 +7,11 @@ export interface JevEvaluationState {
     min_confidence: number;
   };
   note: string;
+  baseline?: {
+    matched_rules: string[];
+    risk: RiskLevel | null;
+    skip_jev: boolean;
+  };
 }
 
 export interface JevProvider {

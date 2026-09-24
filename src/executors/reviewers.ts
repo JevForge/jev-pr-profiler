@@ -16,10 +16,10 @@ function parseReviewers(raw: string[]): { users: string[]; teams: string[] } {
     if (!value) continue;
     if (value.startsWith('team:')) {
       teams.push(value.slice('team:'.length));
-    } else if (value.includes('/')) {
-      teams.push(value.split('/').pop()!);
+    } else if (value.replace(/^@/, '').includes('/')) {
+      teams.push(value.replace(/^@/, '').split('/').pop()!);
     } else {
-      users.push(value);
+      users.push(value.replace(/^@/, ''));
     }
   }
   return { users: [...new Set(users)], teams: [...new Set(teams)] };

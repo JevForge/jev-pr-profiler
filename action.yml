@@ -52,6 +52,14 @@ inputs:
     description: Workspace path to incident history JSON (array or {incidents:[]}).
     required: false
     default: .jev/incidents.json
+  sentinel_report_path:
+    description: Optional JEV Security Sentinel JSON decision artifact. Preferred over SARIF when both exist.
+    required: false
+    default: .jev/security-sentinel-report.json
+  sentinel_sarif_path:
+    description: Optional JEV Security Sentinel SARIF 2.1.0 artifact used when the JSON report is absent.
+    required: false
+    default: .jev/security-sentinel.sarif
   min_confidence:
     description: Minimum Jev confidence (0-1) required to trust the profile.
     required: false
@@ -89,6 +97,10 @@ inputs:
   request_reviewers:
     description: Comma/newline list of GitHub users or team:slug reviewers to request when risk is HIGH/CRITICAL or review_depth is EXPERT.
     required: false
+  request_codeowners_reviewers:
+    description: Include CODEOWNERS owners for sensitive paths in high-risk reviewer requests.
+    required: false
+    default: 'false'
   write_report_artifact:
     description: Write markdown and JSON profile reports under .jev/.
     required: false
@@ -96,7 +108,10 @@ inputs:
   structured_logs:
     description: Emit a single JSON summary log line.
     required: false
-    default: 'false'
+    default: 'true'
+  fail_on_risk:
+    description: Optional HIGH or CRITICAL threshold that fails the Action after outputs/effects are emitted.
+    required: false
   dry_run:
     description: Skip comments, labels, check runs, and reviewer requests.
     required: false
@@ -115,6 +130,8 @@ outputs:
     description: LIGHT | STANDARD | THOROUGH | EXPERT
   recommended_checks:
     description: JSON array of allowlisted check ids
+  review_checklist:
+    description: JSON array of allowlisted review checklist item ids
   confidence:
     description: Confidence between 0 and 1. 0 when Jev did not evaluate.
   reason_codes:
@@ -124,7 +141,7 @@ outputs:
   provisional:
     description: true when the profile did not come from a confident live Jev response
   jev_status:
-    description: evaluated | unavailable | schema_rejected
+    description: evaluated | unavailable | schema_rejected | skipped
   policy_floor_risk:
     description: Deterministic risk floor. Final risk is never weaker.
   summary:
@@ -147,6 +164,8 @@ outputs:
     description: Lines added across summarized files
   deletions:
     description: Lines deleted across summarized files
+  suggested_reviewers:
+    description: JSON array of CODEOWNERS owners suggested for sensitive changed paths
 
 runs:
   using: node24

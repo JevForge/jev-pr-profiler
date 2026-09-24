@@ -97,5 +97,17 @@ describe('executors', () => {
       users: ['alice'],
       teams: ['security'],
     });
+
+    const codeownersRequest = vi.fn(async () => undefined);
+    await maybeRequestReviewers(
+      ['@alice', '@org/security'],
+      false,
+      decision,
+      { requestReviewers: codeownersRequest },
+    );
+    expect(codeownersRequest).toHaveBeenCalledWith({
+      users: ['alice'],
+      teams: ['security'],
+    });
   });
 });

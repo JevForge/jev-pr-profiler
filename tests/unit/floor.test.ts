@@ -110,4 +110,19 @@ describe('computeDeterministicFloor', () => {
     expect(floor.reason_codes).toContain('COVERAGE_DROP');
     expect(floor.recommended_checks).toContain('integration_tests');
   });
+
+  it('raises the floor for API and UI areas with area-specific checks', () => {
+    const diff = summarizeDiffFiles([
+      { filename: 'src/api/routes.ts', status: 'modified', additions: 2, deletions: 1 },
+      { filename: 'src/ui/components/Button.tsx', status: 'modified', additions: 2, deletions: 1 },
+    ]);
+    const floor = computeDeterministicFloor(buildEvidence({ metadata: meta(), diff }));
+    expect(diff.areas.map(area => area.area)).toEqual(['api', 'ui']);
+    expect(floor.risk).toBe('MEDIUM');
+    expect(floor.reason_codes).toContain('AREA_API');
+    expect(floor.reason_codes).toContain('AREA_UI');
+    expect(floor.recommended_checks).toEqual(
+      expect.arrayContaining(['architecture_review', 'accessibility_review']),
+    );
+  });
 });

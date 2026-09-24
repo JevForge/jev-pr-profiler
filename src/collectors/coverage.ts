@@ -1,7 +1,6 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { z } from 'zod';
 import { CoverageSignalsSchema, type CoverageSignals } from '../schemas/profiler.js';
+import { readWorkspaceJson } from '../utils/workspace-file.js';
 
 const CoverageFileSchema = z.object({
   lines_pct: z.number().optional(),
@@ -34,10 +33,9 @@ export function loadCoverageSignals(
   workspacePath: string,
   relativePath: string,
 ): CoverageSignals | null {
-  const full = resolve(workspacePath, relativePath);
-  if (!existsSync(full)) return null;
-
-  const raw = CoverageFileSchema.parse(JSON.parse(readFileSync(full, 'utf8')));
+  const content = readWorkspaceJson(workspacePath, relativePath, 'Coverage report');
+  if (content === null) return null;
+  const raw = CoverageFileSchema.parse(content);
   const lines =
     raw.lines_pct ?? raw.head?.lines_pct ?? null;
   const branches =

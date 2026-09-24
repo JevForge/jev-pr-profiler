@@ -6,6 +6,8 @@ import {
   type RecommendedCheck,
   type ReviewDepth,
   type RiskLevel,
+  RISK_RANK,
+  type FailOnRiskLevel,
 } from '../schemas/enums.js';
 import {
   ProfilerDecisionSchema,
@@ -30,6 +32,23 @@ export type PolicyOutcome =
   | { status: 'warn'; decision: ProfilerDecision; message: string }
   | { status: 'request-review'; decision: ProfilerDecision }
   | { status: 'no-op'; decision: ProfilerDecision; message: string };
+
+export function applyRiskGate(
+  outcome: PolicyOutcome,
+  threshold?: FailOnRiskLevel,
+): PolicyOutcome {
+  if (!threshold || !outcome.decision.risk_level) return outcome;
+  if (RISK_RANK[outcome.decision.risk_level] < RISK_RANK[threshold]) return outcome;
+  const decision = ProfilerDecisionSchema.parse({
+    ...outcome.decision,
+    reason_codes: mergeReasons(outcome.decision.reason_codes, 'FAIL_ON_RISK'),
+  });
+  return {
+    status: 'fail',
+    decision,
+    message: `Risk ${decision.risk_level} reached fail_on_risk=${threshold}`,
+  };
+}
 
 /**
  * Raise Jev proposal to at least the deterministic floor. Never trusts free-form text as commands.

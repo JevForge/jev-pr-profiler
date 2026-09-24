@@ -72,6 +72,9 @@ export function buildCheckSummary(outcome: PolicyOutcome): string {
     `| Policy | \`${outcome.status}\` |`,
     `| Reason codes | ${d.reason_codes.map(c => `\`${c}\``).join(', ')} |`,
     '',
+    '#### Review checklist',
+    ...d.review_checklist.map(item => `- [ ] ${item}`),
+    '',
     d.explanation || '_No explanation._',
   ].join('\n');
 }
@@ -80,6 +83,7 @@ export interface CheckRunClient {
   findCheckRun(input: {
     headSha: string;
     name: string;
+    externalId: string;
   }): Promise<{ id: number } | null>;
   createCheckRun(input: {
     name: string;
@@ -114,7 +118,11 @@ export async function maybeCreateCheckRun(
   const conclusion = checkConclusion(outcome);
   const summary = buildCheckSummary(outcome);
 
-  const existing = await client.findCheckRun({ headSha, name: CHECK_RUN_NAME });
+  const existing = await client.findCheckRun({
+    headSha,
+    name: CHECK_RUN_NAME,
+    externalId: CHECK_RUN_EXTERNAL_ID,
+  });
   if (existing) {
     await client.updateCheckRun({
       checkRunId: existing.id,

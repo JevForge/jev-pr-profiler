@@ -7,3 +7,36 @@ coverage/
 *.log
 .DS_Store
 .jev/*.local.yml
+
+# Generated Action evidence and local reports
+.jev/pr-profiler-report.json
+.jev/pr-profiler-report.md
+.jev/security-findings.json
+.jev/security-sentinel-report.json
+.jev/security-sentinel-report.md
+.jev/security-sentinel.sarif
+.jev/findings.json
+.jev/coverage.json
+.jev/incidents.json
+.jev/results/
+.jev/reports/
+.jev/artifacts/
+
+# Local test, security, and SARIF outputs
+test-results/
+security-results/
+.security-results/
+playwright-report/
+blob-report/
+*.sarif
+*.sarif.json
+*.lcov
+junit*.xml
+
+# Agent planning and validation records
+.grill/
+.start-feature/
+.test-feature/
+.pre-pr/
+.finish-task/
+.security-check/

@@ -51,6 +51,13 @@ function pickReasonCodes(evidence: PrEvidence, decision: ProfilerDecision['decis
   if (evidence.incidents && evidence.incidents.recent_count > 0) {
     codes.push('INCIDENT_HISTORY');
   }
+  for (const area of evidence.diff.areas) {
+    if (area.area === 'auth') codes.push('AREA_AUTH');
+    if (area.area === 'api') codes.push('AREA_API');
+    if (area.area === 'infra') codes.push('AREA_INFRA');
+    if (area.area === 'ui') codes.push('AREA_UI');
+  }
+  if (evidence.diff.areas.length >= 2) codes.push('CROSS_AREA');
   if (decision === 'ABSTAIN') codes.push('POLICY_ABSTAIN');
   if (decision === 'REQUEST_REVIEW') codes.push('POLICY_REQUEST_REVIEW');
   return (codes.length ? codes : (['LOW_COMPLEXITY'] as ReasonCode[])).slice(0, 24);

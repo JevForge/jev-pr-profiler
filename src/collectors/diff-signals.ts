@@ -4,7 +4,9 @@ import {
   DiffSignalsSchema,
   type DiffFile,
   type DiffSignals,
+  type DiffAreaSummary,
 } from '../schemas/profiler.js';
+import { DIFF_AREAS, type DiffArea } from '../schemas/enums.js';
 
 const EXT_LANG: Record<string, string> = {
   '.ts': 'typescript',
@@ -52,6 +54,12 @@ const MIGRATION_PATTERNS = [
   /(^|\/)(migrations?|db\/migrate)\//i,
   /\.(sql)$/i,
 ];
+const AREA_PATTERNS: Record<DiffArea, RegExp[]> = {
+  auth: [/(^|\/)(auth|oauth|iam|session|passport|jwt|security)\//i],
+  api: [/(^|\/)(api|routes?|controllers?|graphql|resolvers?|handlers?)\//i, /(^|\/)(openapi|swagger)(\.|\/)/i],
+  infra: INFRA_PATTERNS,
+  ui: [/(^|\/)(ui|components?|pages?|views?|frontend|web)\//i, /\.(tsx|jsx|vue|svelte)$/i],
+};
 
 function languageFor(filename: string): string | null {
   const base = filename.toLowerCase();
@@ -72,6 +80,7 @@ export function summarizeDiffFiles(files: DiffFile[], maxPaths = 30): DiffSignal
   let touch_auth = false;
   let touch_migrations = false;
   let nonDoc = 0;
+  const areaStats = new Map<DiffArea, DiffAreaSummary>();
 
   for (const file of parsed) {
     additions += file.additions;
@@ -87,6 +96,21 @@ export function summarizeDiffFiles(files: DiffFile[], maxPaths = 30): DiffSignal
     if (AUTH_PATTERNS.some(p => p.test(file.filename))) touch_auth = true;
     if (MIGRATION_PATTERNS.some(p => p.test(file.filename))) touch_migrations = true;
     if (!DOC_PATTERNS.some(p => p.test(file.filename))) nonDoc += 1;
+    for (const area of DIFF_AREAS) {
+      if (!AREA_PATTERNS[area].some(pattern => pattern.test(file.filename))) continue;
+      const current = areaStats.get(area) ?? {
+        area,
+        file_count: 0,
+        additions: 0,
+        deletions: 0,
+        paths: [],
+      };
+      current.file_count += 1;
+      current.additions += file.additions;
+      current.deletions += file.deletions;
+      if (current.paths.length < 20) current.paths.push(file.filename);
+      areaStats.set(area, current);
+    }
   }
 
   return DiffSignalsSchema.parse({
@@ -104,6 +128,9 @@ export function summarizeDiffFiles(files: DiffFile[], maxPaths = 30): DiffSignal
     estimated_diff_tokens: Math.min(
       48_000,
       Math.ceil((additions + deletions) * 4 + parsed.length * 8),
+    ),
+    areas: DIFF_AREAS.map(area => areaStats.get(area)).filter(
+      (value): value is DiffAreaSummary => value !== undefined,
     ),
   });
 }
