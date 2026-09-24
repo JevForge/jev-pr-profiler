@@ -202,18 +202,50 @@ async function main(): Promise<void> {
 
   const checkRunClient = octokit
     ? {
+        async findCheckRun(input: { headSha: string; name: string }) {
+          const runs = await octokit.paginate(octokit.rest.checks.listForRef, {
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            ref: input.headSha,
+            check_name: input.name,
+            filter: 'latest',
+            per_page: 10,
+          });
+          const match = runs.find(run => run.name === input.name);
+          return match ? { id: match.id } : null;
+        },
         async createCheckRun(input: {
           name: string;
           headSha: string;
           conclusion: 'success' | 'neutral' | 'failure';
           title: string;
           summary: string;
+          externalId?: string;
         }) {
           await octokit.rest.checks.create({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
             name: input.name,
             head_sha: input.headSha,
+            external_id: input.externalId,
+            status: 'completed',
+            conclusion: input.conclusion,
+            output: {
+              title: input.title,
+              summary: input.summary,
+            },
+          });
+        },
+        async updateCheckRun(input: {
+          checkRunId: number;
+          conclusion: 'success' | 'neutral' | 'failure';
+          title: string;
+          summary: string;
+        }) {
+          await octokit.rest.checks.update({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            check_run_id: input.checkRunId,
             status: 'completed',
             conclusion: input.conclusion,
             output: {

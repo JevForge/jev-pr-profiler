@@ -64,11 +64,26 @@ describe('executors', () => {
   it('creates check runs and requests reviewers for high risk', async () => {
     const outcome: PolicyOutcome = { status: 'ok', decision };
     const createCheckRun = vi.fn(async () => undefined);
+    const updateCheckRun = vi.fn(async () => undefined);
+    const findCheckRun = vi.fn(async () => null);
     const check = await maybeCreateCheckRun(true, false, 'sha', outcome, {
+      findCheckRun,
       createCheckRun,
+      updateCheckRun,
     });
     expect(check).toBe('created');
     expect(createCheckRun).toHaveBeenCalledOnce();
+
+    findCheckRun.mockResolvedValueOnce({ id: 99 });
+    const updated = await maybeCreateCheckRun(true, false, 'sha', outcome, {
+      findCheckRun,
+      createCheckRun,
+      updateCheckRun,
+    });
+    expect(updated).toBe('updated');
+    expect(updateCheckRun).toHaveBeenCalledWith(
+      expect.objectContaining({ checkRunId: 99 }),
+    );
 
     const requestReviewers = vi.fn(async () => undefined);
     const reviewers = await maybeRequestReviewers(

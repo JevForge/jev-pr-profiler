@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-24
+
+### Changed
+
+* Check Runs are idempotent per head SHA: existing runs are updated instead of duplicated
+
 ## [0.3.0] — 2026-09-24
 
 ### Added
