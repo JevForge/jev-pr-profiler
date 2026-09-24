@@ -45,10 +45,29 @@ export function buildProfileQuestions() {
         'Choose the review_depth that matches the risk and complexity. Never recommend merging or blocking.',
       criteria: depthCriteria,
     },
+    recommended_check_primary: {
+      type: 'choice' as const,
+      instructions:
+        'Choose the most important verification check for this PR from the allowlist.',
+      criteria: checkCriteria,
+    },
+    recommended_check_secondary: {
+      type: 'choice' as const,
+      instructions:
+        'Choose a second important allowlisted check (may match primary if only one applies).',
+      criteria: checkCriteria,
+    },
+    recommended_check_tertiary: {
+      type: 'choice' as const,
+      instructions:
+        'Choose a third allowlisted check (may repeat if fewer than three apply).',
+      criteria: checkCriteria,
+    },
+    // Legacy single-check question kept for older custom adapters.
     recommended_check: {
       type: 'choice' as const,
       instructions:
-        'Choose the single most important verification check for this PR from the allowlist.',
+        'Legacy: choose the single most important verification check. Prefer primary/secondary/tertiary when available.',
       criteria: checkCriteria,
     },
     abstain: {

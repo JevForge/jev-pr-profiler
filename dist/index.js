@@ -51428,9 +51428,25 @@ function buildProfileQuestions() {
       instructions: "Choose the review_depth that matches the risk and complexity. Never recommend merging or blocking.",
       criteria: depthCriteria
     },
+    recommended_check_primary: {
+      type: "choice",
+      instructions: "Choose the most important verification check for this PR from the allowlist.",
+      criteria: checkCriteria
+    },
+    recommended_check_secondary: {
+      type: "choice",
+      instructions: "Choose a second important allowlisted check (may match primary if only one applies).",
+      criteria: checkCriteria
+    },
+    recommended_check_tertiary: {
+      type: "choice",
+      instructions: "Choose a third allowlisted check (may repeat if fewer than three apply).",
+      criteria: checkCriteria
+    },
+    // Legacy single-check question kept for older custom adapters.
     recommended_check: {
       type: "choice",
-      instructions: "Choose the single most important verification check for this PR from the allowlist.",
+      instructions: "Legacy: choose the single most important verification check. Prefer primary/secondary/tertiary when available.",
       criteria: checkCriteria
     },
     abstain: {
@@ -51662,6 +51678,13 @@ function pickReasonCodes(evidence, decision) {
   if (decision === "REQUEST_REVIEW") codes.push("POLICY_REQUEST_REVIEW");
   return (codes.length ? codes : ["LOW_COMPLEXITY"]).slice(0, 24);
 }
+function collectRecommendedChecks(raw) {
+  const candidates = [
+    ...raw.recommendedChecks ?? [],
+    raw.recommendedCheck ?? null
+  ].filter((c) => typeof c === "string" && c.length > 0);
+  return filterAllowlistedChecks(candidates, RECOMMENDED_CHECKS);
+}
 function normalizeProfile(raw, evidence) {
   let decision = "PROFILE";
   if ((raw.abstainProbability ?? 0) >= 0.55) {
@@ -51688,8 +51711,8 @@ function normalizeProfile(raw, evidence) {
   }
   const risk_level = assertRisk(raw.riskLevel);
   const review_depth = assertDepth(raw.reviewDepth);
-  const primaryCheck = raw.recommendedCheck ? filterAllowlistedChecks([raw.recommendedCheck], RECOMMENDED_CHECKS) : [];
-  const recommended_checks = primaryCheck.length > 0 ? [.../* @__PURE__ */ new Set([...primaryCheck, ...defaultChecksForRisk(risk_level)])].slice(0, 16) : defaultChecksForRisk(risk_level);
+  const fromJev = collectRecommendedChecks(raw);
+  const recommended_checks = fromJev.length > 0 ? [.../* @__PURE__ */ new Set([...fromJev, ...defaultChecksForRisk(risk_level)])].slice(0, 16) : defaultChecksForRisk(risk_level);
   return ProfilerDecisionSchema.parse({
     decision: decision === "REQUEST_REVIEW" ? "REQUEST_REVIEW" : "PROFILE",
     risk_level,
@@ -51716,6 +51739,11 @@ function unavailableDecision(message) {
     jev_status: "unavailable",
     policy_floor_risk: null
   });
+}
+function choiceFromAnswers(answers, key) {
+  const value = answers?.[key];
+  if (value?.type === "choice" && typeof value.choice === "string") return value.choice;
+  return null;
 }
 
 // src/jev/vercel-ai-gateway.ts
@@ -51751,7 +51779,6 @@ function createVercelAiGatewayProvider(options) {
         });
         const risk = result.answers.risk_level;
         const depth = result.answers.review_depth;
-        const check2 = result.answers.recommended_check;
         if (!risk || risk.type !== "choice" || typeof risk.choice !== "string") {
           throw new Error("SCHEMA_REJECTED: missing risk_level choice");
         }
@@ -51759,11 +51786,17 @@ function createVercelAiGatewayProvider(options) {
           throw new Error("SCHEMA_REJECTED: missing review_depth choice");
         }
         const typesafeConfidence = result.providerMetadata?.typesafe?.confidence?.risk_level;
+        const answers = result.answers;
         return normalizeProfile(
           {
             riskLevel: risk.choice,
             reviewDepth: depth.choice,
-            recommendedCheck: check2?.type === "choice" && typeof check2.choice === "string" ? check2.choice : null,
+            recommendedChecks: [
+              choiceFromAnswers(answers, "recommended_check_primary"),
+              choiceFromAnswers(answers, "recommended_check_secondary"),
+              choiceFromAnswers(answers, "recommended_check_tertiary"),
+              choiceFromAnswers(answers, "recommended_check")
+            ],
             confidence: typeof typesafeConfidence === "number" ? typesafeConfidence : confidenceFromAnswer(risk),
             abstainProbability: result.answers.abstain?.type === "boolean" ? result.answers.abstain.probability : void 0,
             requestReviewProbability: result.answers.request_review?.type === "boolean" ? result.answers.request_review.probability : void 0,
@@ -51824,7 +51857,6 @@ function createTypesafeNativeProvider(options) {
         const body = await response.json();
         const risk = body.answers?.risk_level;
         const depth = body.answers?.review_depth;
-        const check2 = body.answers?.recommended_check;
         if (!risk || risk.type !== "choice" || typeof risk.choice !== "string") {
           throw new Error("SCHEMA_REJECTED: missing risk_level choice");
         }
@@ -51835,7 +51867,12 @@ function createTypesafeNativeProvider(options) {
           {
             riskLevel: risk.choice,
             reviewDepth: depth.choice,
-            recommendedCheck: check2?.type === "choice" && typeof check2.choice === "string" ? check2.choice : null,
+            recommendedChecks: [
+              choiceFromAnswers(body.answers, "recommended_check_primary"),
+              choiceFromAnswers(body.answers, "recommended_check_secondary"),
+              choiceFromAnswers(body.answers, "recommended_check_tertiary"),
+              choiceFromAnswers(body.answers, "recommended_check")
+            ],
             confidence: body.confidence?.risk_level ?? risk.confidence ?? 0.5,
             abstainProbability: body.answers?.abstain?.type === "boolean" ? body.answers.abstain.probability : void 0,
             requestReviewProbability: body.answers?.request_review?.type === "boolean" ? body.answers.request_review.probability : void 0,
@@ -51894,7 +51931,6 @@ function createCustomCompatibleProvider(options) {
         const body = await response.json();
         const risk = body.answers?.risk_level;
         const depth = body.answers?.review_depth;
-        const check2 = body.answers?.recommended_check;
         if (!risk || risk.type !== "choice" || typeof risk.choice !== "string") {
           throw new Error("SCHEMA_REJECTED: missing risk_level choice");
         }
@@ -51905,7 +51941,12 @@ function createCustomCompatibleProvider(options) {
           {
             riskLevel: risk.choice,
             reviewDepth: depth.choice,
-            recommendedCheck: check2?.type === "choice" && typeof check2.choice === "string" ? check2.choice : null,
+            recommendedChecks: [
+              choiceFromAnswers(body.answers, "recommended_check_primary"),
+              choiceFromAnswers(body.answers, "recommended_check_secondary"),
+              choiceFromAnswers(body.answers, "recommended_check_tertiary"),
+              choiceFromAnswers(body.answers, "recommended_check")
+            ],
             confidence: body.confidence?.risk_level ?? risk.confidence ?? 0.5,
             abstainProbability: body.answers?.abstain?.type === "boolean" ? body.answers.abstain.probability : void 0,
             requestReviewProbability: body.answers?.request_review?.type === "boolean" ? body.answers.request_review.probability : void 0,

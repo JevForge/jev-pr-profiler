@@ -10,6 +10,15 @@ describe('Jev question contract', () => {
     const questions = buildProfileQuestions();
     expect(Object.keys(questions.risk_level.criteria).sort()).toEqual([...RISK_LEVELS].sort());
     expect(Object.keys(questions.review_depth.criteria).sort()).toEqual([...REVIEW_DEPTHS].sort());
+    expect(Object.keys(questions.recommended_check_primary.criteria).sort()).toEqual([
+      ...RECOMMENDED_CHECKS,
+    ].sort());
+    expect(Object.keys(questions.recommended_check_secondary.criteria).sort()).toEqual([
+      ...RECOMMENDED_CHECKS,
+    ].sort());
+    expect(Object.keys(questions.recommended_check_tertiary.criteria).sort()).toEqual([
+      ...RECOMMENDED_CHECKS,
+    ].sort());
     expect(Object.keys(questions.recommended_check.criteria).sort()).toEqual([
       ...RECOMMENDED_CHECKS,
     ].sort());

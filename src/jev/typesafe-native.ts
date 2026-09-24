@@ -1,6 +1,6 @@
 import type { JevProvider, JevProviderOptions, JevEvaluationState } from './types.js';
 import { buildProfileQuestions, summarizeState } from './questions.js';
-import { normalizeProfile, unavailableDecision } from './normalize.js';
+import { normalizeProfile, unavailableDecision, choiceFromAnswers } from './normalize.js';
 import type { ProfilerDecision } from '../schemas/profiler.js';
 
 type EvaluateBody = {
@@ -59,7 +59,6 @@ export function createTypesafeNativeProvider(options: JevProviderOptions): JevPr
         const body = (await response.json()) as EvaluateBody;
         const risk = body.answers?.risk_level;
         const depth = body.answers?.review_depth;
-        const check = body.answers?.recommended_check;
         if (!risk || risk.type !== 'choice' || typeof risk.choice !== 'string') {
           throw new Error('SCHEMA_REJECTED: missing risk_level choice');
         }
@@ -71,10 +70,12 @@ export function createTypesafeNativeProvider(options: JevProviderOptions): JevPr
           {
             riskLevel: risk.choice,
             reviewDepth: depth.choice,
-            recommendedCheck:
-              check?.type === 'choice' && typeof check.choice === 'string'
-                ? check.choice
-                : null,
+            recommendedChecks: [
+              choiceFromAnswers(body.answers, 'recommended_check_primary'),
+              choiceFromAnswers(body.answers, 'recommended_check_secondary'),
+              choiceFromAnswers(body.answers, 'recommended_check_tertiary'),
+              choiceFromAnswers(body.answers, 'recommended_check'),
+            ],
             confidence: body.confidence?.risk_level ?? risk.confidence ?? 0.5,
             abstainProbability:
               body.answers?.abstain?.type === 'boolean'

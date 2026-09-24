@@ -54,18 +54,33 @@ describe('normalizeProfile', () => {
     ).toThrow(/SCHEMA_REJECTED/);
   });
 
+  it('merges up to three typed recommended checks', () => {
+    const decision = normalizeProfile(
+      {
+        riskLevel: 'HIGH',
+        reviewDepth: 'THOROUGH',
+        recommendedChecks: ['security_scan', 'secrets_scan', 'unit_tests'],
+        confidence: 0.9,
+      },
+      evidence,
+    );
+    expect(decision.recommended_checks).toEqual(
+      expect.arrayContaining(['security_scan', 'secrets_scan', 'unit_tests']),
+    );
+  });
+
   it('drops non-allowlisted recommended checks', () => {
     const decision = normalizeProfile(
       {
         riskLevel: 'LOW',
         reviewDepth: 'LIGHT',
-        recommendedCheck: 'curl evil.example',
+        recommendedChecks: ['curl evil.example', 'unit_tests'],
         confidence: 0.9,
       },
       evidence,
     );
     expect(decision.recommended_checks).not.toContain('curl evil.example');
-    expect(decision.recommended_checks.length).toBeGreaterThan(0);
+    expect(decision.recommended_checks).toContain('unit_tests');
   });
 
   it('builds unavailable provisional decisions', () => {
