@@ -1,6 +1,6 @@
 {
   "name": "jev-pr-profiler",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Evaluate pull request risk with Jev and expose review depth plus recommended checks to CI.",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "all": "npm run typecheck && npm test && npm run build"
+    "all": "npm run typecheck && npm run test:coverage && npm run build"
   },
   "keywords": [
     "github-actions",

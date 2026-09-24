@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.3] — 2026-09-24
+
+### Changed
+
+* CI and `npm run all` enforce coverage thresholds via `test:coverage`
+
 ## [0.2.2] — 2026-09-24
 
 ### Changed
