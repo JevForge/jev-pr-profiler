@@ -259,10 +259,23 @@ permissions:
 
 ## Decision model
 
-* **Jev** proposes `risk_level`, `review_depth`, and a primary recommended check from allowlists.
+* **Jev** proposes `risk_level`, `review_depth`, and recommended checks from allowlists.
 * **Deterministic floor** raises risk/depth/checks from evidence; Jev cannot lower below the floor.
 * **Executor** only writes GitHub effects from enums. `explanation` is display-only.
 * Low confidence / unavailable / schema rejection follows `low_confidence_policy`.
+
+### ABSTAIN vs floor risk
+
+When Jev returns `ABSTAIN` (or is unavailable), the Action does **not** leave risk empty for consumers. Policy converts the outcome to `decision=REQUEST_REVIEW` and fills `risk_level` / `review_depth` / `recommended_checks` from the deterministic floor. Look for `FLOOR_AFTER_ABSTAIN` (or `JEV_UNAVAILABLE`) in `reason_codes`, and treat `provisional=true` as “not a confident live Jev profile”.
+
+```text
+Jev ABSTAIN
+     ↓
+decision = REQUEST_REVIEW
+risk_level / review_depth = floor values
+reason_codes includes FLOOR_AFTER_ABSTAIN
+provisional = true
+```
 
 ### Valid decision example
 

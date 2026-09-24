@@ -84,6 +84,27 @@ describe('policy + schema', () => {
     expect(outcome.decision.risk_level).toBe('HIGH');
   });
 
+  it('maps ABSTAIN to REQUEST_REVIEW with floor and FLOOR_AFTER_ABSTAIN', () => {
+    const abstain = ProfilerDecisionSchema.parse({
+      decision: 'ABSTAIN',
+      risk_level: null,
+      review_depth: null,
+      recommended_checks: [],
+      confidence: 0.4,
+      reason_codes: ['POLICY_ABSTAIN'],
+      explanation: 'unclear',
+      provisional: false,
+      jev_status: 'evaluated',
+      policy_floor_risk: null,
+    });
+    const outcome = applyConfidencePolicy(abstain, 0.7, 'request-review', floor);
+    expect(outcome.status).toBe('request-review');
+    expect(outcome.decision.decision).toBe('REQUEST_REVIEW');
+    expect(outcome.decision.risk_level).toBe('HIGH');
+    expect(outcome.decision.provisional).toBe(true);
+    expect(outcome.decision.reason_codes).toContain('FLOOR_AFTER_ABSTAIN');
+  });
+
   it('uses request-review policy without failing the job', () => {
     const low = ProfilerDecisionSchema.parse({
       decision: 'PROFILE',

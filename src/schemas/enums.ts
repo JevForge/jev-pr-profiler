@@ -52,6 +52,7 @@ export const REASON_CODES = [
   'POLICY_ABSTAIN',
   'POLICY_REQUEST_REVIEW',
   'POLICY_FLOOR_RAISED',
+  'FLOOR_AFTER_ABSTAIN',
 ] as const;
 export type ReasonCode = (typeof REASON_CODES)[number];
 
