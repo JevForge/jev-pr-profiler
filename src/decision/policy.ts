@@ -121,19 +121,24 @@ export function applyConfidencePolicy(
         validated.reason_codes,
         'POLICY_ABSTAIN',
         'POLICY_REQUEST_REVIEW',
+        'FLOOR_AFTER_ABSTAIN',
       ),
+      explanation:
+        validated.explanation ||
+        `Jev abstained; decision becomes REQUEST_REVIEW with deterministic floor risk=${floor.risk}`,
+      provisional: true,
       policy_floor_risk: floor.risk,
     });
     if (policy === 'no-op') {
-      return { status: 'no-op', decision: provisional, message: 'Abstained' };
+      return { status: 'no-op', decision: provisional, message: 'Abstained; floor profile retained' };
     }
     if (policy === 'warn') {
-      return { status: 'warn', decision: provisional, message: 'Abstained' };
+      return { status: 'warn', decision: provisional, message: 'Abstained; floor profile retained' };
     }
     if (policy === 'request-review') {
       return { status: 'request-review', decision: provisional };
     }
-    return { status: 'fail', decision: provisional, message: 'Profiler abstained' };
+    return { status: 'fail', decision: provisional, message: 'Profiler abstained; floor profile retained' };
   }
 
   if (validated.decision === 'REQUEST_REVIEW') {

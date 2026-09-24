@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-09-24
+
+### Changed
+
+* Clarify ABSTAIN handling: policy sets `REQUEST_REVIEW` with floor risk/depth/checks and `FLOOR_AFTER_ABSTAIN`
+
 ## [0.2.1] — 2026-09-24
 
 ### Added
