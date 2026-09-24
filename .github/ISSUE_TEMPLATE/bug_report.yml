@@ -2,21 +2,52 @@ name: Bug report
 description: Report a bug in JEV Pull Request Profiler
 labels: [bug]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report.
+
+        **Do not include API keys, tokens, credentials or other secrets.**
   - type: textarea
     id: description
     attributes:
       label: What happened?
+      description: Short summary of the problem.
     validations:
       required: true
   - type: textarea
-    id: repro
+    id: expected
     attributes:
-      label: Reproduction steps
+      label: Expected behavior
     validations:
       required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow example
+      description: Minimal YAML that reproduces the issue (redact secrets).
+      render: yaml
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant Action logs with secrets redacted.
+      render: shell
+    validations:
+      required: false
   - type: input
     id: version
     attributes:
       label: Action version / ref
+      description: For example v0.1.0 or a commit SHA.
+      placeholder: v0.1.0
     validations:
       required: true

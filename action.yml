@@ -1,5 +1,5 @@
 name: JEV Pull Request Profiler
-description: Profile PR complexity and risk with Jev. Recommends risk level, review depth, and required checks.
+description: Evaluate pull request risk with Jev and expose review depth plus recommended checks to CI.
 author: JevForge
 branding:
   icon: eye

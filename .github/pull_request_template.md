@@ -1,9 +1,11 @@
 ## Summary
 
-<!-- What does this PR change? -->
+<!-- What does this PR change and why? -->
 
-## Test plan
+## Checklist
 
-- [ ] `npm run typecheck`
-- [ ] `npm test`
-- [ ] `npm run build`
+- [ ] Code tested (`npm test` / `npm run all`)
+- [ ] Documentation updated when inputs/outputs/behavior change
+- [ ] No secrets, tokens, or credentials committed
+- [ ] Public contract remains compatible (or breaking change is called out)
+- [ ] `dist/` rebuilt if `src/` changed

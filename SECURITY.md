@@ -2,14 +2,18 @@
 
 ## Supported versions
 
-Security fixes are applied to the latest release on `main` and the current major tag (`v0`).
+Security fixes target the latest release on `main` and the current major tag (`v0`).
 
 ## Reporting a vulnerability
 
-Email security concerns to the JevForge maintainers via GitHub Security Advisories on this repository. Do not open a public issue for secrets or exploitable defects.
+Do **not** open a public Issue for secrets or exploitable defects.
+
+Prefer [GitHub Security Advisories](https://docs.github.com/en/code-security/security-advisories) on this repository when available. Do not include API keys, tokens, or private data in the report.
 
 ## Secrets handling
 
-- Never commit `AI_GATEWAY_API_KEY`, `TYPESAFE_API_KEY`, or custom Jev secrets.
-- The Action redacts common token patterns from PR text before calling Jev.
-- Patch hunks are never sent to Jev — only path metadata and line counts.
+* Store provider credentials as GitHub Actions secrets (`AI_GATEWAY_API_KEY`, `TYPESAFE_API_KEY`, or `JEV_CUSTOM_API_KEY`).
+* Never commit secrets or paste them into Issues, PRs, or workflow logs.
+* The Action redacts common token patterns from PR text before calling Jev.
+* Patch hunks and full file contents are never sent to Jev—only path metadata and line counts.
+* Free-form Jev `explanation` text is display-only and is never executed as a command, path, or GitHub operation.

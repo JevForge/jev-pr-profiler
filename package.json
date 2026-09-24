@@ -1,11 +1,19 @@
 {
   "name": "jev-pr-profiler",
   "version": "0.1.0",
-  "description": "Profile PR complexity and risk with Jev. Recommends risk level, review depth, and required checks.",
+  "description": "Evaluate pull request risk with Jev and expose review depth plus recommended checks to CI.",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JevForge/jev-pr-profiler.git"
+  },
+  "homepage": "https://github.com/JevForge/jev-pr-profiler#readme",
+  "bugs": {
+    "url": "https://github.com/JevForge/jev-pr-profiler/issues"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -20,6 +28,7 @@
     "pull-request",
     "code-review",
     "risk",
+    "ci-cd",
     "jevforge"
   ],
   "license": "MIT",

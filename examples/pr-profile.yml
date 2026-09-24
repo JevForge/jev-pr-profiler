@@ -17,7 +17,7 @@ jobs:
       # - run: cp reports/security.json .jev/security-findings.json
 
       - id: profile
-        uses: JevForge/jev-pr-profiler@v0
+        uses: JevForge/jev-pr-profiler@v0.1.0
         with:
           comment_on_github: true
           apply_labels: true

@@ -1,0 +1,31 @@
+name: Basic PR profile
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: profile
+        uses: JevForge/jev-pr-profiler@v0.1.0
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        with:
+          create_check_run: true
+          dry_run: false
+          low_confidence_policy: warn
+
+      - name: Print outputs
+        run: |
+          echo "decision=${{ steps.profile.outputs.decision }}"
+          echo "risk=${{ steps.profile.outputs.risk_level }}"
+          echo "depth=${{ steps.profile.outputs.review_depth }}"
+          echo "checks=${{ steps.profile.outputs.recommended_checks }}"
+          echo "confidence=${{ steps.profile.outputs.confidence }}"

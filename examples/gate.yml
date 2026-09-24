@@ -1,0 +1,48 @@
+name: Gate jobs from PR profile
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    outputs:
+      risk: ${{ steps.profile.outputs.risk_level }}
+      checks: ${{ steps.profile.outputs.recommended_checks }}
+      decision: ${{ steps.profile.outputs.decision }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: profile
+        uses: JevForge/jev-pr-profiler@v0.1.0
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        with:
+          create_check_run: true
+          apply_labels: true
+          low_confidence_policy: request-review
+
+  security:
+    needs: profile
+    if: contains(fromJSON(needs.profile.outputs.checks), 'security_scan')
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Run security_scan here"
+
+  expert-review:
+    needs: profile
+    if: needs.profile.outputs.risk == 'HIGH' || needs.profile.outputs.risk == 'CRITICAL'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Escalate for thorough / expert review"
+
+  human-gate:
+    needs: profile
+    if: needs.profile.outputs.decision == 'REQUEST_REVIEW'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Wait for human review of the profile"
