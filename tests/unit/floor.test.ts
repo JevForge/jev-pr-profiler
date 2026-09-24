@@ -20,7 +20,24 @@ function meta(labels: string[] = []) {
 }
 
 describe('computeDeterministicFloor', () => {
-  it('keeps docs-only changes low', () => {
+  it('keeps docs-only changes low even with large doc churn', () => {
+    const files = Array.from({ length: 40 }, (_, i) => ({
+      filename: `docs/page-${i}.md`,
+      status: 'added',
+      additions: 200,
+      deletions: 0,
+    }));
+    const diff = summarizeDiffFiles(files);
+    expect(diff.touch_docs_only).toBe(true);
+    const floor = computeDeterministicFloor(buildEvidence({ metadata: meta(), diff }));
+    expect(floor.risk).toBe('LOW');
+    expect(floor.review_depth).toBe('LIGHT');
+    expect(floor.reason_codes).toContain('DOCS_ONLY');
+    expect(floor.reason_codes).not.toContain('MANY_FILES');
+    expect(floor.recommended_checks).toContain('docs_review');
+  });
+
+  it('keeps docs-only low', () => {
     const diff = summarizeDiffFiles([
       { filename: 'README.md', status: 'modified', additions: 10, deletions: 2 },
       { filename: 'docs/guide.md', status: 'added', additions: 40, deletions: 0 },
