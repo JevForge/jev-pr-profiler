@@ -52166,6 +52166,8 @@ async function maybePostComment(enabled, dryRun, decision, client) {
 var RISK_LABEL_PREFIX = "jev:risk:";
 var DEPTH_LABEL_PREFIX = "jev:review-depth:";
 var REVIEW_LABEL = "jev:review";
+var CHECK_RUN_NAME = "JEV Pull Request Profiler";
+var CHECK_RUN_EXTERNAL_ID = "jev-pr-profiler";
 function desiredLabels(decision) {
   const labels = [];
   if (decision.risk_level) labels.push(`${RISK_LABEL_PREFIX}${decision.risk_level}`);
@@ -52216,12 +52218,25 @@ async function maybeCreateCheckRun(enabled, dryRun, headSha, outcome, client) {
   if (!headSha) return "skipped";
   if (dryRun || !client) return "dry-run";
   const title = outcome.decision.risk_level ? `${outcome.decision.decision}: ${outcome.decision.risk_level}` : outcome.decision.decision;
+  const conclusion = checkConclusion(outcome);
+  const summary = buildCheckSummary(outcome);
+  const existing = await client.findCheckRun({ headSha, name: CHECK_RUN_NAME });
+  if (existing) {
+    await client.updateCheckRun({
+      checkRunId: existing.id,
+      conclusion,
+      title,
+      summary
+    });
+    return "updated";
+  }
   await client.createCheckRun({
-    name: "JEV Pull Request Profiler",
+    name: CHECK_RUN_NAME,
     headSha,
-    conclusion: checkConclusion(outcome),
+    conclusion,
     title,
-    summary: buildCheckSummary(outcome)
+    summary,
+    externalId: CHECK_RUN_EXTERNAL_ID
   });
   return "created";
 }
@@ -52589,12 +52604,38 @@ async function main() {
   } : null;
   const headSha = github.context.payload.pull_request?.head?.sha ?? github.context.sha ?? null;
   const checkRunClient = octokit ? {
+    async findCheckRun(input) {
+      const runs = await octokit.paginate(octokit.rest.checks.listForRef, {
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        ref: input.headSha,
+        check_name: input.name,
+        filter: "latest",
+        per_page: 10
+      });
+      const match = runs.find((run) => run.name === input.name);
+      return match ? { id: match.id } : null;
+    },
     async createCheckRun(input) {
       await octokit.rest.checks.create({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         name: input.name,
         head_sha: input.headSha,
+        external_id: input.externalId,
+        status: "completed",
+        conclusion: input.conclusion,
+        output: {
+          title: input.title,
+          summary: input.summary
+        }
+      });
+    },
+    async updateCheckRun(input) {
+      await octokit.rest.checks.update({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        check_run_id: input.checkRunId,
         status: "completed",
         conclusion: input.conclusion,
         output: {

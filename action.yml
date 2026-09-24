@@ -132,7 +132,7 @@ outputs:
   label_status:
     description: applied | dry-run | skipped
   check_status:
-    description: created | dry-run | skipped
+    description: created | updated | dry-run | skipped
   comment_status:
     description: posted | updated | dry-run | skipped
   reviewers_status:

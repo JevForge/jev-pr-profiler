@@ -4,6 +4,8 @@ import type { PolicyOutcome } from '../decision/policy.js';
 export const RISK_LABEL_PREFIX = 'jev:risk:';
 export const DEPTH_LABEL_PREFIX = 'jev:review-depth:';
 export const REVIEW_LABEL = 'jev:review';
+export const CHECK_RUN_NAME = 'JEV Pull Request Profiler';
+export const CHECK_RUN_EXTERNAL_ID = 'jev-pr-profiler';
 
 export function desiredLabels(decision: ProfilerDecision): string[] {
   const labels: string[] = [];
@@ -75,9 +77,20 @@ export function buildCheckSummary(outcome: PolicyOutcome): string {
 }
 
 export interface CheckRunClient {
+  findCheckRun(input: {
+    headSha: string;
+    name: string;
+  }): Promise<{ id: number } | null>;
   createCheckRun(input: {
     name: string;
     headSha: string;
+    conclusion: 'success' | 'neutral' | 'failure';
+    title: string;
+    summary: string;
+    externalId?: string;
+  }): Promise<void>;
+  updateCheckRun(input: {
+    checkRunId: number;
     conclusion: 'success' | 'neutral' | 'failure';
     title: string;
     summary: string;
@@ -90,7 +103,7 @@ export async function maybeCreateCheckRun(
   headSha: string | null,
   outcome: PolicyOutcome,
   client: CheckRunClient | null,
-): Promise<'created' | 'dry-run' | 'skipped'> {
+): Promise<'created' | 'updated' | 'dry-run' | 'skipped'> {
   if (!enabled) return 'skipped';
   if (!headSha) return 'skipped';
   if (dryRun || !client) return 'dry-run';
@@ -98,13 +111,27 @@ export async function maybeCreateCheckRun(
   const title = outcome.decision.risk_level
     ? `${outcome.decision.decision}: ${outcome.decision.risk_level}`
     : outcome.decision.decision;
+  const conclusion = checkConclusion(outcome);
+  const summary = buildCheckSummary(outcome);
+
+  const existing = await client.findCheckRun({ headSha, name: CHECK_RUN_NAME });
+  if (existing) {
+    await client.updateCheckRun({
+      checkRunId: existing.id,
+      conclusion,
+      title,
+      summary,
+    });
+    return 'updated';
+  }
 
   await client.createCheckRun({
-    name: 'JEV Pull Request Profiler',
+    name: CHECK_RUN_NAME,
     headSha,
-    conclusion: checkConclusion(outcome),
+    conclusion,
     title,
-    summary: buildCheckSummary(outcome),
+    summary,
+    externalId: CHECK_RUN_EXTERNAL_ID,
   });
   return 'created';
 }

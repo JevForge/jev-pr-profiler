@@ -48,7 +48,7 @@ export interface RunProfilerResult {
   summary: string;
   commentStatus: 'posted' | 'updated' | 'dry-run' | 'skipped';
   labelStatus: 'applied' | 'dry-run' | 'skipped';
-  checkStatus: 'created' | 'dry-run' | 'skipped';
+  checkStatus: 'created' | 'updated' | 'dry-run' | 'skipped';
   reviewersStatus: 'requested' | 'dry-run' | 'skipped';
   reportMarkdown: string | null;
   reportJson: string | null;
