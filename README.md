@@ -37,7 +37,7 @@ Pull Request event
         ↓
 Collect metadata + compact diff signals
         ↓
-Optional security / coverage / incidents
+Optional security / Sentinel / coverage / incidents
         ↓
 Deterministic risk floor
         ↓
@@ -65,7 +65,8 @@ flowchart LR
 3. Compute a **deterministic floor** that Jev cannot weaken.
 4. Call Jev through `jev_provider` (no silent provider fallback).
 5. Validate enums/allowlists; merge recommended checks with the floor; apply `low_confidence_policy`.
-6. Emit outputs. Free-form `explanation` is display-only.
+6. Emit outputs. Free-form `explanation` is display-only; `review_checklist` is
+   derived only from an allowlist.
 
 ## Demo
 
@@ -148,6 +149,8 @@ See:
 | `coverage_path` | no | `.jev/coverage.json` | Coverage summary path |
 | `include_incidents` | no | `true` | Load optional incident evidence |
 | `incidents_path` | no | `.jev/incidents.json` | Incidents JSON path |
+| `sentinel_report_path` | no | `.jev/security-sentinel-report.json` | Sentinel JSON decision artifact (preferred) |
+| `sentinel_sarif_path` | no | `.jev/security-sentinel.sarif` | Sentinel SARIF fallback |
 | `min_confidence` | no | `0.7` | Minimum confidence to trust the profile |
 | `low_confidence_policy` | no | `fail` | `fail` \| `warn` \| `request-review` \| `no-op` |
 | `jev_provider` | no | `vercel-ai-gateway` | How to reach Jev |
@@ -158,8 +161,10 @@ See:
 | `apply_labels` | no | `false` | Apply managed `jev:*` labels |
 | `create_check_run` | no | `true` | Create Check Run on head SHA |
 | `request_reviewers` | no | — | Users / `team:slug` for HIGH/CRITICAL or EXPERT |
+| `request_codeowners_reviewers` | no | `false` | Include CODEOWNERS owners in high-risk reviewer requests |
 | `write_report_artifact` | no | `false` | Write `.jev/pr-profiler-report.*` |
-| `structured_logs` | no | `false` | Emit one JSON evidence log line |
+| `structured_logs` | no | `true` | Emit one redacted JSON decision log line |
+| `fail_on_risk` | no | — | Optional `HIGH` or `CRITICAL` Action failure threshold |
 | `dry_run` | no | `false` | Skip mutating GitHub writes |
 | `github_token` | no | `${{ github.token }}` | For files/comments/labels/checks/reviewers |
 
@@ -171,11 +176,12 @@ See:
 | `risk_level` | `LOW` \| `MEDIUM` \| `HIGH` \| `CRITICAL` |
 | `review_depth` | `LIGHT` \| `STANDARD` \| `THOROUGH` \| `EXPERT` |
 | `recommended_checks` | JSON array of allowlisted check ids |
+| `review_checklist` | JSON array of allowlisted checklist item ids |
 | `confidence` | `0`–`1` |
 | `reason_codes` | JSON array of stable reason codes |
 | `explanation` | Display-only text (never executed) |
 | `provisional` | `true` when not a confident live Jev profile |
-| `jev_status` | `evaluated` \| `unavailable` \| `schema_rejected` |
+| `jev_status` | `evaluated` \| `unavailable` \| `schema_rejected` \| `skipped` |
 | `policy_floor_risk` | Deterministic floor risk |
 | `summary` | One-line log summary |
 | `label_status` | `applied` \| `dry-run` \| `skipped` |
@@ -187,6 +193,7 @@ See:
 | `file_count` | PR files summarized |
 | `additions` | Lines added |
 | `deletions` | Lines deleted |
+| `suggested_reviewers` | JSON array of CODEOWNERS owners for sensitive paths |
 
 ### Using outputs in conditions
 
@@ -222,6 +229,33 @@ Repository → Settings → Secrets and variables → Actions → New repository
 
 Optional local config: [`examples/.jev/config.yml`](examples/.jev/config.yml) (inputs override file values).
 
+### Repository baseline
+
+Repositories can add `.jev/pr-profiler.yml` to keep deterministic risk knowledge close
+to the code. Rules match changed-path globs and only raise the floor. A rule may set
+`skip_jev: true` when the repository policy is fully deterministic; the result is
+marked provisional with `jev_status=skipped`.
+
+```yaml
+version: 1
+floors:
+  - paths: ["src/auth/**", ".github/workflows/**"]
+    risk: HIGH
+    review_depth: EXPERT
+    recommended_checks: [security_scan, codeowners_review]
+overrides:
+  - paths: ["docs/**"]
+    risk: LOW
+    review_depth: LIGHT
+    recommended_checks: [docs_review]
+    skip_jev: true
+```
+
+The evidence pack also contains bounded `auth`, `api`, `infra`, and `ui` area
+summaries. If the Security Sentinel action has written its JSON report, the profiler
+uses it; otherwise it reads the Sentinel SARIF artifact. The two formats are never
+counted twice.
+
 ## Why JEV?
 
 Jev is TypeSafe’s evaluation model for **structured decisions**, not chat. This Action needs allowlisted enums for `risk_level`, `review_depth`, and recommended checks—plus confidence and optional abstain/review signals. Jev returns typed answers (`choice` / `boolean`) that code can validate and raise against a deterministic floor. Generative text would be unsafe to treat as a check id or GitHub operation. That is why the Action uses `experimental_evaluate` and never `generateText` for the decision.
@@ -234,6 +268,7 @@ Only:
 * labels, author login, draft flag, commit count
 * compact diff metadata (paths, languages, +/- counts, sensitive/auth/infra/test flags)
 * optional compact security / coverage / incident summaries
+* optional Sentinel JSON/SARIF security summaries, with JSON preferred over SARIF
 * confidence constraints
 
 Never: GitHub tokens, API keys, patch hunks, full file contents, or raw scanner dumps.
@@ -262,6 +297,10 @@ permissions:
 * **Jev** proposes `risk_level`, `review_depth`, and recommended checks from allowlists.
 * **Deterministic floor** raises risk/depth/checks from evidence; Jev cannot lower below the floor.
 * **Executor** only writes GitHub effects from enums. `explanation` is display-only.
+* **CODEOWNERS** owners are suggestions by default; reviewer requests from them require
+  `request_codeowners_reviewers: true`.
+* **`fail_on_risk`** is opt-in and fails the Action only after outputs and configured
+  effects are emitted. It never approves or merges a PR.
 * Low confidence / unavailable / schema rejection follows `low_confidence_policy`.
 
 ### ABSTAIN vs floor risk

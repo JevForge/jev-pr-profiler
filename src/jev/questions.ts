@@ -101,6 +101,13 @@ export interface SummarizedEvidence {
     touch_auth: boolean;
     touch_docs_only: boolean;
     touch_migrations: boolean;
+    areas: Array<{
+      area: string;
+      file_count: number;
+      additions: number;
+      deletions: number;
+      paths: string[];
+    }>;
   };
   security: {
     total: number;
@@ -122,6 +129,11 @@ export interface SummarizedEvidence {
   } | null;
   constraints: { min_confidence: number };
   note: string;
+  baseline?: {
+    matched_rules: string[];
+    risk: string | null;
+    skip_jev: boolean;
+  };
 }
 
 export function summarizeState(state: JevEvaluationState): SummarizedEvidence {
@@ -144,6 +156,7 @@ export function summarizeState(state: JevEvaluationState): SummarizedEvidence {
       touch_auth: evidence.diff.touch_auth,
       touch_docs_only: evidence.diff.touch_docs_only,
       touch_migrations: evidence.diff.touch_migrations,
+      areas: evidence.diff.areas.map(area => ({ ...area, paths: [...area.paths] })),
     },
     security: evidence.security
       ? {
@@ -171,5 +184,12 @@ export function summarizeState(state: JevEvaluationState): SummarizedEvidence {
       : null,
     constraints: { min_confidence: state.constraints.min_confidence },
     note: state.note,
+    baseline: state.baseline
+      ? {
+          matched_rules: [...state.baseline.matched_rules],
+          risk: state.baseline.risk,
+          skip_jev: state.baseline.skip_jev,
+        }
+      : undefined,
   };
 }

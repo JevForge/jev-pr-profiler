@@ -7,6 +7,9 @@ import { summarizeDiffFiles, emptyDiffSignals } from './collectors/diff-signals.
 import { loadSecurityFindings } from './collectors/security-findings.js';
 import { loadCoverageSignals } from './collectors/coverage.js';
 import { loadIncidentSignals } from './collectors/incidents.js';
+import { loadSentinelEvidence } from './collectors/sentinel.js';
+import { loadBaselineConfig, matchBaseline } from './collectors/baseline.js';
+import { loadCodeowners, suggestCodeowners } from './collectors/codeowners.js';
 import {
   coalescePolicy,
   coalesceProvider,
@@ -107,10 +110,17 @@ async function main(): Promise<void> {
     core.getInput('coverage_path') || config.coverage_path || '.jev/coverage.json';
   const incidentsPath =
     core.getInput('incidents_path') || config.incidents_path || '.jev/incidents.json';
+  const sentinelReportPath =
+    core.getInput('sentinel_report_path') || config.sentinel_report_path || '.jev/security-sentinel-report.json';
+  const sentinelSarifPath =
+    core.getInput('sentinel_sarif_path') || config.sentinel_sarif_path || '.jev/security-sentinel.sarif';
 
-  const security = include_security
-    ? loadSecurityFindings(workspace, securityPath)
+  const sentinel = include_security
+    ? loadSentinelEvidence(workspace, sentinelReportPath, sentinelSarifPath, diff.top_paths)
     : null;
+  const security = sentinel?.summary ?? (include_security
+    ? loadSecurityFindings(workspace, securityPath)
+    : null);
   const coverage = include_coverage ? loadCoverageSignals(workspace, coveragePath) : null;
   const incidents = include_incidents
     ? loadIncidentSignals(workspace, incidentsPath, diff.top_paths)
@@ -123,6 +133,16 @@ async function main(): Promise<void> {
     coverage,
     incidents,
   });
+  const baseline = matchBaseline(loadBaselineConfig(workspace), diff.top_paths);
+  const suggestedReviewers = suggestCodeowners(
+    loadCodeowners(workspace),
+    diff.top_paths,
+    diff.sensitive_paths,
+  );
+  const requestCodeowners = parseBoolean(
+    core.getInput('request_codeowners_reviewers') || undefined,
+    config.request_codeowners_reviewers ?? false,
+  );
 
   const issueNumber = collected.metadata.number;
   const commentClient =
@@ -202,7 +222,7 @@ async function main(): Promise<void> {
 
   const checkRunClient = octokit
     ? {
-        async findCheckRun(input: { headSha: string; name: string }) {
+        async findCheckRun(input: { headSha: string; name: string; externalId: string }) {
           const runs = await octokit.paginate(octokit.rest.checks.listForRef, {
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
@@ -211,7 +231,9 @@ async function main(): Promise<void> {
             filter: 'latest',
             per_page: 10,
           });
-          const match = runs.find(run => run.name === input.name);
+          const match = runs.find(
+            run => run.name === input.name || run.external_id === input.externalId,
+          );
           return match ? { id: match.id } : null;
         },
         async createCheckRun(input: {
@@ -277,20 +299,6 @@ async function main(): Promise<void> {
     'Data sent to Jev: sanitized PR title/body excerpt, labels, compact diff metadata (paths/counts only), optional security/coverage/incident summaries. Secrets and patch hunks are never sent.',
   );
 
-  if (parseBoolean(core.getInput('structured_logs') || undefined, false)) {
-    core.info(
-      JSON.stringify({
-        event: 'jev_pr_profiler_evidence',
-        file_count: diff.file_count,
-        additions: diff.additions,
-        deletions: diff.deletions,
-        security_total: security?.total ?? null,
-        coverage_delta: coverage?.delta_lines_pct ?? null,
-        incidents: incidents?.recent_count ?? null,
-      }),
-    );
-  }
-
   const result = await runProfiler({
     evidence,
     min_confidence: Number(core.getInput('min_confidence') || config.min_confidence || 0.7),
@@ -316,7 +324,10 @@ async function main(): Promise<void> {
       config.write_report_artifact ?? false,
     ),
     dry_run: parseBoolean(core.getInput('dry_run') || undefined, false),
-    request_reviewers: parseStringList(core.getInput('request_reviewers') || undefined),
+    request_reviewers: [
+      ...parseStringList(core.getInput('request_reviewers') || undefined),
+      ...(requestCodeowners ? suggestedReviewers : []),
+    ],
     workspace,
     head_sha: headSha,
     apiKey: resolveApiKey(jev_provider),
@@ -324,6 +335,12 @@ async function main(): Promise<void> {
     labelClient,
     checkRunClient,
     reviewerClient,
+    baseline,
+    suggested_reviewers: suggestedReviewers,
+    fail_on_risk: (core.getInput('fail_on_risk') || config.fail_on_risk || undefined) as
+      | 'HIGH'
+      | 'CRITICAL'
+      | undefined,
   });
 
   applyPolicyToAction(
@@ -345,8 +362,43 @@ async function main(): Promise<void> {
       reviewersStatus: result.reviewersStatus,
       reportMarkdown: result.reportMarkdown,
       reportJson: result.reportJson,
+      suggestedReviewers: result.suggestedReviewers,
     },
   );
+
+  if (parseBoolean(
+    core.getInput('structured_logs') || undefined,
+    config.structured_logs ?? true,
+  )) {
+    core.info(JSON.stringify({
+      event: 'jev_pr_profiler_decision',
+      schema_version: 1,
+      decision: result.decision.decision,
+      risk_level: result.decision.risk_level,
+      review_depth: result.decision.review_depth,
+      confidence: result.decision.confidence,
+      provisional: result.decision.provisional,
+      jev_status: result.decision.jev_status,
+      reason_codes: result.decision.reason_codes,
+      review_checklist: result.decision.review_checklist,
+      file_count: diff.file_count,
+      additions: diff.additions,
+      deletions: diff.deletions,
+      areas: diff.areas.map(area => ({
+        area: area.area,
+        file_count: area.file_count,
+        additions: area.additions,
+        deletions: area.deletions,
+      })),
+      security_total: security?.total ?? null,
+      sentinel_source: sentinel?.source ?? null,
+      coverage_delta: coverage?.delta_lines_pct ?? null,
+      incidents: incidents?.recent_count ?? null,
+      baseline_rules: baseline.matched_rules,
+      suggested_reviewers_count: suggestedReviewers.length,
+      fail_on_risk: core.getInput('fail_on_risk') || config.fail_on_risk || null,
+    }));
+  }
 
   core.info(`Comment: ${result.commentStatus}`);
   core.info(`Labels: ${result.labelStatus}`);

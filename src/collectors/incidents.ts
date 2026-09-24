@@ -1,7 +1,6 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { z } from 'zod';
 import { IncidentSignalsSchema, type IncidentSignals } from '../schemas/profiler.js';
+import { readWorkspaceJson } from '../utils/workspace-file.js';
 
 const IncidentRowSchema = z.object({
   id: z.string().optional(),
@@ -31,10 +30,9 @@ export function loadIncidentSignals(
   relatedPaths: string[] = [],
   daysLookback = 90,
 ): IncidentSignals | null {
-  const full = resolve(workspacePath, relativePath);
-  if (!existsSync(full)) return null;
-
-  const parsed = IncidentsFileSchema.parse(JSON.parse(readFileSync(full, 'utf8')));
+  const content = readWorkspaceJson(workspacePath, relativePath, 'Incident report');
+  if (content === null) return null;
+  const parsed = IncidentsFileSchema.parse(content);
   if (!Array.isArray(parsed) && parsed.summary) {
     return IncidentSignalsSchema.parse({
       recent_count: parsed.summary.recent_count ?? 0,

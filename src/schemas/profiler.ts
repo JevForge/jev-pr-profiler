@@ -8,6 +8,9 @@ import {
   RECOMMENDED_CHECKS,
   REVIEW_DEPTHS,
   RISK_LEVELS,
+  DIFF_AREAS,
+  REVIEW_CHECKLIST_ITEMS,
+  FAIL_ON_RISK_LEVELS,
 } from './enums.js';
 
 export const DiffFileSchema = z.object({
@@ -20,6 +23,16 @@ export const DiffFileSchema = z.object({
 });
 
 export type DiffFile = z.infer<typeof DiffFileSchema>;
+
+export const DiffAreaSummarySchema = z.object({
+  area: z.enum(DIFF_AREAS),
+  file_count: z.number().int().nonnegative(),
+  additions: z.number().int().nonnegative(),
+  deletions: z.number().int().nonnegative(),
+  paths: z.array(z.string().max(512)).max(20),
+}).strict();
+
+export type DiffAreaSummary = z.infer<typeof DiffAreaSummarySchema>;
 
 export const DiffSignalsSchema = z
   .object({
@@ -35,6 +48,7 @@ export const DiffSignalsSchema = z
     touch_docs_only: z.boolean(),
     touch_migrations: z.boolean(),
     estimated_diff_tokens: z.number().int().nonnegative(),
+    areas: z.array(DiffAreaSummarySchema).max(4),
   })
   .strict();
 
@@ -118,6 +132,7 @@ export const ProfilerInputsSchema = z.object({
   write_report_artifact: z.boolean().default(false),
   dry_run: z.boolean().default(false),
   max_files: z.number().int().positive().max(500).default(100),
+  fail_on_risk: z.enum(FAIL_ON_RISK_LEVELS).optional(),
 });
 
 export type ProfilerInputs = z.infer<typeof ProfilerInputsSchema>;
@@ -134,6 +149,7 @@ export const ProfilerDecisionSchema = z
     provisional: z.boolean().default(false),
     jev_status: z.enum(JEV_STATUSES),
     policy_floor_risk: z.enum(RISK_LEVELS).nullable(),
+    review_checklist: z.array(z.enum(REVIEW_CHECKLIST_ITEMS)).max(10).default([]),
   })
   .strict()
   .superRefine((value, ctx) => {

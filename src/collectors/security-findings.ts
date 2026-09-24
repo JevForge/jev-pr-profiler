@@ -1,10 +1,9 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { z } from 'zod';
 import {
   SecurityFindingSummarySchema,
   type SecurityFindingSummary,
 } from '../schemas/profiler.js';
+import { readWorkspaceJson } from '../utils/workspace-file.js';
 
 const FindingRowSchema = z.object({
   severity: z.string().optional(),
@@ -39,10 +38,9 @@ export function loadSecurityFindings(
   workspacePath: string,
   relativePath: string,
 ): SecurityFindingSummary | null {
-  const full = resolve(workspacePath, relativePath);
-  if (!existsSync(full)) return null;
-
-  const parsed = FindingsFileSchema.parse(JSON.parse(readFileSync(full, 'utf8')));
+  const content = readWorkspaceJson(workspacePath, relativePath, 'Security findings');
+  if (content === null) return null;
+  const parsed = FindingsFileSchema.parse(content);
   if (!Array.isArray(parsed) && parsed.summary) {
     return SecurityFindingSummarySchema.parse({
       total: parsed.summary.total ?? 0,

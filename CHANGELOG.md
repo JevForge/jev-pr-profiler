@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+* Optional `.jev/pr-profiler.yml` deterministic floors/overrides with explicit `skip_jev`
+* `auth` / `api` / `infra` / `ui` diff-area evidence and area-specific floor checks
+* Native JEV Security Sentinel JSON/SARIF evidence loading with JSON precedence
+* Allowlisted `review_checklist`, CODEOWNERS suggestions, and opt-in CODEOWNERS reviewer requests
+* Redacted structured decision logs enabled by default and optional `fail_on_risk` gating
+* Contract tests validating example workflow inputs/outputs against `action.yml`
+
+### Security
+
+* Workspace evidence loaders now reject path traversal and oversized JSON artifacts
+
 ## [0.3.1] — 2026-09-24
 
 ### Changed

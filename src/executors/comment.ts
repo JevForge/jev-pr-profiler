@@ -1,4 +1,5 @@
 import type { ProfilerDecision } from '../schemas/profiler.js';
+import { renderReviewChecklist } from '../decision/checklist.js';
 
 export const COMMENT_MARKER = '<!-- jev-pr-profiler -->';
 
@@ -23,6 +24,9 @@ export function buildCommentMarkdown(decision: ProfilerDecision): string {
     lines.push('', decision.explanation);
   }
   lines.push(
+    '',
+    '#### Review checklist',
+    ...renderReviewChecklist(decision.review_checklist),
     '',
     '_This Action profiles risk and recommends checks. It never approves or merges the PR._',
   );

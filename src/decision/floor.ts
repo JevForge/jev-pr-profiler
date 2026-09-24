@@ -107,6 +107,24 @@ export function computeDeterministicFloor(evidence: PrEvidence): DeterministicFl
     state.review_depth = maxDepth(state.review_depth, 'THOROUGH');
   }
 
+  const areas = new Set(diff.areas.map(area => area.area));
+  if (areas.has('auth')) state.reasons.push('AREA_AUTH');
+  if (areas.has('api')) {
+    state.reasons.push('AREA_API');
+    state.risk = maxRisk(state.risk, 'MEDIUM');
+    state.review_depth = maxDepth(state.review_depth, 'STANDARD');
+    state.checks.add('architecture_review');
+  }
+  if (areas.has('infra')) state.reasons.push('AREA_INFRA');
+  if (areas.has('ui')) {
+    state.reasons.push('AREA_UI');
+    state.checks.add('accessibility_review');
+  }
+  if (areas.size >= 2) {
+    state.reasons.push('CROSS_AREA');
+    state.review_depth = maxDepth(state.review_depth, 'THOROUGH');
+  }
+
   if (diff.touch_tests) {
     state.reasons.push('TESTS_INCLUDED');
   } else if (diff.file_count > 0) {
@@ -115,7 +133,7 @@ export function computeDeterministicFloor(evidence: PrEvidence): DeterministicFl
     state.review_depth = maxDepth(state.review_depth, 'STANDARD');
   }
 
-  if (diff.languages.length >= 4) {
+  if (diff.languages.length >= 4 && areas.size < 2) {
     state.reasons.push('CROSS_AREA');
     state.review_depth = maxDepth(state.review_depth, 'THOROUGH');
   }

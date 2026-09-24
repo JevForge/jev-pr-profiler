@@ -22,12 +22,14 @@ export function writeDecisionOutputs(
     reviewersStatus: string;
     reportMarkdown: string | null;
     reportJson: string | null;
+    suggestedReviewers: string[];
   },
 ): void {
   writer.setOutput('decision', decision.decision);
   writer.setOutput('risk_level', decision.risk_level ?? '');
   writer.setOutput('review_depth', decision.review_depth ?? '');
   writer.setOutput('recommended_checks', JSON.stringify(decision.recommended_checks));
+  writer.setOutput('review_checklist', JSON.stringify(decision.review_checklist));
   writer.setOutput('confidence', String(decision.confidence));
   writer.setOutput('reason_codes', JSON.stringify(decision.reason_codes));
   writer.setOutput('explanation', decision.explanation);
@@ -44,6 +46,7 @@ export function writeDecisionOutputs(
   writer.setOutput('reviewers_status', extras.reviewersStatus);
   writer.setOutput('report_markdown_file', extras.reportMarkdown ?? '');
   writer.setOutput('report_json_file', extras.reportJson ?? '');
+  writer.setOutput('suggested_reviewers', JSON.stringify(extras.suggestedReviewers));
 }
 
 export function applyPolicyToAction(

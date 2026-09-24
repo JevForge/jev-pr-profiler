@@ -23,6 +23,11 @@ const JeConfigSchema = z.object({
   security_findings_path: z.string().optional(),
   coverage_path: z.string().optional(),
   incidents_path: z.string().optional(),
+  sentinel_report_path: z.string().optional(),
+  sentinel_sarif_path: z.string().optional(),
+  structured_logs: z.boolean().optional(),
+  fail_on_risk: z.enum(['HIGH', 'CRITICAL']).optional(),
+  request_codeowners_reviewers: z.boolean().optional(),
 });
 
 export type JeConfig = z.infer<typeof JeConfigSchema>;

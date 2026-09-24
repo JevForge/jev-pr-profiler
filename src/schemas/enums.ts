@@ -7,6 +7,9 @@ export type RiskLevel = (typeof RISK_LEVELS)[number];
 export const REVIEW_DEPTHS = ['LIGHT', 'STANDARD', 'THOROUGH', 'EXPERT'] as const;
 export type ReviewDepth = (typeof REVIEW_DEPTHS)[number];
 
+export const DIFF_AREAS = ['auth', 'api', 'infra', 'ui'] as const;
+export type DiffArea = (typeof DIFF_AREAS)[number];
+
 export const RECOMMENDED_CHECKS = [
   'unit_tests',
   'integration_tests',
@@ -53,6 +56,13 @@ export const REASON_CODES = [
   'POLICY_REQUEST_REVIEW',
   'POLICY_FLOOR_RAISED',
   'FLOOR_AFTER_ABSTAIN',
+  'BASELINE_FLOOR',
+  'JEV_SKIPPED_BY_BASELINE',
+  'FAIL_ON_RISK',
+  'AREA_AUTH',
+  'AREA_API',
+  'AREA_INFRA',
+  'AREA_UI',
 ] as const;
 export type ReasonCode = (typeof REASON_CODES)[number];
 
@@ -71,8 +81,25 @@ export const LOW_CONFIDENCE_POLICIES = [
 ] as const;
 export type LowConfidencePolicy = (typeof LOW_CONFIDENCE_POLICIES)[number];
 
-export const JEV_STATUSES = ['evaluated', 'unavailable', 'schema_rejected'] as const;
+export const JEV_STATUSES = ['evaluated', 'unavailable', 'schema_rejected', 'skipped'] as const;
 export type JevStatus = (typeof JEV_STATUSES)[number];
+
+export const FAIL_ON_RISK_LEVELS = ['HIGH', 'CRITICAL'] as const;
+export type FailOnRiskLevel = (typeof FAIL_ON_RISK_LEVELS)[number];
+
+export const REVIEW_CHECKLIST_ITEMS = [
+  'run_tests',
+  'inspect_security_impact',
+  'review_api_compatibility',
+  'review_infrastructure_changes',
+  'validate_migrations',
+  'confirm_codeowners',
+  'check_coverage_delta',
+  'check_ui_accessibility',
+  'review_docs_links',
+  'validate_sentinel_findings',
+] as const;
+export type ReviewChecklistItem = (typeof REVIEW_CHECKLIST_ITEMS)[number];
 
 export const RISK_RANK: Record<RiskLevel, number> = {
   LOW: 0,
