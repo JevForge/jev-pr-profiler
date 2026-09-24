@@ -1,0 +1,38 @@
+name: PR risk profile
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Optional: drop evidence files before profiling
+      # - run: cp reports/security.json .jev/security-findings.json
+
+      - id: profile
+        uses: JevForge/jev-pr-profiler@v0
+        with:
+          comment_on_github: true
+          apply_labels: true
+          create_check_run: true
+          write_report_artifact: true
+          request_reviewers: |
+            alice
+            team:security
+          low_confidence_policy: request-review
+          include_security_findings: true
+          include_coverage: true
+          include_incidents: true
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+
+      - name: Gate optional heavy jobs
+        if: contains(fromJSON(steps.profile.outputs.recommended_checks), 'security_scan')
+        run: echo "Kick off security_scan workflow here"

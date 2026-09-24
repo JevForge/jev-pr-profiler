@@ -1,0 +1,10 @@
+jev_provider: vercel-ai-gateway
+min_confidence: 0.7
+low_confidence_policy: request-review
+comment_on_github: true
+apply_labels: true
+create_check_run: true
+max_files: 100
+security_findings_path: .jev/security-findings.json
+coverage_path: .jev/coverage.json
+incidents_path: .jev/incidents.json

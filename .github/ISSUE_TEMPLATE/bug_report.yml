@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a bug in JEV Pull Request Profiler
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Action version / ref
+    validations:
+      required: true

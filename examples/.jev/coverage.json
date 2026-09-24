@@ -1,0 +1,5 @@
+{
+  "base": { "lines_pct": 82.5, "branches_pct": 70 },
+  "head": { "lines_pct": 79.0, "branches_pct": 68 },
+  "uncovered_paths": ["src/auth/session.ts"]
+}

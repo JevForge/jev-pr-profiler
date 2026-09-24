@@ -1,0 +1,11 @@
+{
+  "days_lookback": 90,
+  "incidents": [
+    {
+      "id": "INC-1042",
+      "severity": "high",
+      "component": "auth",
+      "days_ago": 21
+    }
+  ]
+}

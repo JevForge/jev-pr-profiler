@@ -1,0 +1,150 @@
+name: JEV Pull Request Profiler
+description: Profile PR complexity and risk with Jev. Recommends risk level, review depth, and required checks — never merges or blocks on its own.
+author: JevForge
+branding:
+  icon: eye
+  color: purple
+
+inputs:
+  pull_number:
+    description: Pull request number. Defaults to the event pull_request/issue number.
+    required: false
+  title:
+    description: Optional PR title override (otherwise loaded from the event or API).
+    required: false
+  body:
+    description: Optional PR body override.
+    required: false
+  labels:
+    description: Optional JSON array or comma-separated PR labels override.
+    required: false
+  changed_paths:
+    description: Optional JSON array of changed paths. When omitted on pull_request, loaded from the API.
+    required: false
+  max_files:
+    description: Maximum PR files to summarize for Jev (paths and counts only; no patch hunks).
+    required: false
+    default: '100'
+  include_security_findings:
+    description: Load optional security findings from security_findings_path into the evidence pack.
+    required: false
+    default: 'true'
+  security_findings_path:
+    description: Workspace path to security findings JSON (array or {findings:[]}). Summary only is sent to Jev.
+    required: false
+    default: .jev/security-findings.json
+  include_coverage:
+    description: Load optional coverage delta from coverage_path into the evidence pack.
+    required: false
+    default: 'true'
+  coverage_path:
+    description: Workspace path to coverage summary JSON ({base,head,delta} or {lines_pct,...}).
+    required: false
+    default: .jev/coverage.json
+  include_incidents:
+    description: Load optional incident history from incidents_path into the evidence pack.
+    required: false
+    default: 'true'
+  incidents_path:
+    description: Workspace path to incident history JSON (array or {incidents:[]}).
+    required: false
+    default: .jev/incidents.json
+  min_confidence:
+    description: Minimum Jev confidence (0-1) required to trust the profile.
+    required: false
+    default: '0.7'
+  low_confidence_policy:
+    description: fail | warn | request-review | no-op when Jev is unavailable, rejected, or below min_confidence.
+    required: false
+    default: fail
+  jev_provider:
+    description: vercel-ai-gateway | typesafe-native | custom-compatible. No silent fallback.
+    required: false
+    default: vercel-ai-gateway
+  jev_endpoint:
+    description: HTTPS evaluate endpoint. Required for custom-compatible.
+    required: false
+  jev_model:
+    description: Catalog model id for typesafe-native and custom-compatible. Gateway default is typesafe-ai/jev.
+    required: false
+  timeout_ms:
+    description: Remote call timeout in milliseconds.
+    required: false
+    default: '45000'
+  comment_on_github:
+    description: Post or update an idempotent PR summary comment.
+    required: false
+    default: 'false'
+  apply_labels:
+    description: Apply managed jev:risk:* / jev:review-depth:* labels (preserves other labels).
+    required: false
+    default: 'false'
+  create_check_run:
+    description: Create a completed Checks API run named JEV Pull Request Profiler.
+    required: false
+    default: 'true'
+  request_reviewers:
+    description: Comma/newline list of GitHub users or team:slug reviewers to request when risk is HIGH/CRITICAL or review_depth is EXPERT.
+    required: false
+  write_report_artifact:
+    description: Write markdown and JSON profile reports under .jev/.
+    required: false
+    default: 'false'
+  structured_logs:
+    description: Emit a single JSON summary log line.
+    required: false
+    default: 'false'
+  dry_run:
+    description: Skip comments, labels, check runs, and reviewer requests.
+    required: false
+    default: 'false'
+  github_token:
+    description: Token for PR files, comments, labels, check runs, and reviewer requests.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  decision:
+    description: PROFILE | ABSTAIN | REQUEST_REVIEW
+  risk_level:
+    description: LOW | MEDIUM | HIGH | CRITICAL (empty when abstaining without a floor)
+  review_depth:
+    description: LIGHT | STANDARD | THOROUGH | EXPERT
+  recommended_checks:
+    description: JSON array of allowlisted check ids
+  confidence:
+    description: Confidence between 0 and 1. 0 when Jev did not evaluate.
+  reason_codes:
+    description: JSON array of stable reason codes
+  explanation:
+    description: Human-readable explanation for display only (never executed)
+  provisional:
+    description: true when the profile did not come from a confident live Jev response
+  jev_status:
+    description: evaluated | unavailable | schema_rejected
+  policy_floor_risk:
+    description: Deterministic risk floor. Final risk is never weaker.
+  summary:
+    description: One-line profile summary
+  label_status:
+    description: applied | dry-run | skipped
+  check_status:
+    description: created | dry-run | skipped
+  comment_status:
+    description: posted | updated | dry-run | skipped
+  reviewers_status:
+    description: requested | dry-run | skipped
+  report_markdown_file:
+    description: Workspace path to markdown report when write_report_artifact is true
+  report_json_file:
+    description: Workspace path to JSON report when write_report_artifact is true
+  file_count:
+    description: Number of PR files summarized
+  additions:
+    description: Lines added across summarized files
+  deletions:
+    description: Lines deleted across summarized files
+
+runs:
+  using: node24
+  main: dist/index.js

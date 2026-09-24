@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "severity": "high",
+      "category": "sast",
+      "in_change": true,
+      "path": "src/auth/session.ts"
+    },
+    {
+      "severity": "medium",
+      "category": "sca",
+      "in_change": false
+    }
+  ]
+}
