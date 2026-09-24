@@ -19,7 +19,10 @@ inputs:
     description: Optional JSON array or comma-separated PR labels override.
     required: false
   changed_paths:
-    description: Optional JSON array of changed paths. When omitted on pull_request, loaded from the API.
+    description: >-
+      Changed paths as a JSON array of strings, JSON objects with optional
+      additions/deletions/status, or a comma/newline path list. Objects enable
+      accurate churn when not loading files from the API.
     required: false
   max_files:
     description: Maximum PR files to summarize for Jev (paths and counts only; no patch hunks).

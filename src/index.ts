@@ -2,7 +2,8 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { collectPrFromPayload, buildEvidence } from './collectors/evidence.js';
 import { collectPullDiffSignals } from './collectors/pull-diff.js';
-import { summarizeDiffFiles, toDiffFiles, emptyDiffSignals } from './collectors/diff-signals.js';
+import { parseChangedPaths } from './collectors/changed-paths.js';
+import { summarizeDiffFiles, emptyDiffSignals } from './collectors/diff-signals.js';
 import { loadSecurityFindings } from './collectors/security-findings.js';
 import { loadCoverageSignals } from './collectors/coverage.js';
 import { loadIncidentSignals } from './collectors/incidents.js';
@@ -68,10 +69,7 @@ async function main(): Promise<void> {
 
   let diff = emptyDiffSignals();
   if (changedPathsRaw.trim()) {
-    const paths = parseStringList(changedPathsRaw);
-    diff = summarizeDiffFiles(
-      toDiffFiles(paths.map(filename => ({ filename, status: 'modified', additions: 0, deletions: 0 }))),
-    );
+    diff = summarizeDiffFiles(parseChangedPaths(changedPathsRaw));
   } else if (collected.metadata.number && octokit) {
     try {
       diff = await collectPullDiffSignals(collected.metadata.number, {

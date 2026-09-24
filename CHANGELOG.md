@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-09-24
+
+### Added
+
+* `changed_paths` accepts JSON objects with optional `additions` / `deletions` / `status` for accurate churn without the Pulls API
+
 ## [0.2.0] — 2026-09-24
 
 ### Fixed
