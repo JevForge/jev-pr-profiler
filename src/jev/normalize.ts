@@ -14,7 +14,10 @@ import { defaultChecksForRisk } from '../schemas/enums.js';
 export interface RawJevProfile {
   riskLevel: string | null;
   reviewDepth: string | null;
-  recommendedCheck: string | null;
+  /** Up to three allowlisted check ids from typed Jev choices. */
+  recommendedChecks?: Array<string | null>;
+  /** @deprecated Prefer recommendedChecks */
+  recommendedCheck?: string | null;
   confidence: number;
   abstainProbability?: number;
   requestReviewProbability?: number;
@@ -53,6 +56,14 @@ function pickReasonCodes(evidence: PrEvidence, decision: ProfilerDecision['decis
   return (codes.length ? codes : (['LOW_COMPLEXITY'] as ReasonCode[])).slice(0, 24);
 }
 
+function collectRecommendedChecks(raw: RawJevProfile): RecommendedCheck[] {
+  const candidates = [
+    ...(raw.recommendedChecks ?? []),
+    raw.recommendedCheck ?? null,
+  ].filter((c): c is string => typeof c === 'string' && c.length > 0);
+  return filterAllowlistedChecks(candidates, RECOMMENDED_CHECKS);
+}
+
 export function normalizeProfile(
   raw: RawJevProfile,
   evidence: PrEvidence,
@@ -86,12 +97,10 @@ export function normalizeProfile(
 
   const risk_level = assertRisk(raw.riskLevel);
   const review_depth = assertDepth(raw.reviewDepth);
-  const primaryCheck = raw.recommendedCheck
-    ? filterAllowlistedChecks([raw.recommendedCheck], RECOMMENDED_CHECKS)
-    : [];
+  const fromJev = collectRecommendedChecks(raw);
   const recommended_checks: RecommendedCheck[] =
-    primaryCheck.length > 0
-      ? [...new Set([...primaryCheck, ...defaultChecksForRisk(risk_level)])].slice(0, 16)
+    fromJev.length > 0
+      ? [...new Set([...fromJev, ...defaultChecksForRisk(risk_level)])].slice(0, 16)
       : defaultChecksForRisk(risk_level);
 
   return ProfilerDecisionSchema.parse({
@@ -121,4 +130,13 @@ export function unavailableDecision(message: string): ProfilerDecision {
     jev_status: 'unavailable',
     policy_floor_risk: null,
   });
+}
+
+export function choiceFromAnswers(
+  answers: Record<string, { type?: string; choice?: string }> | undefined,
+  key: string,
+): string | null {
+  const value = answers?.[key];
+  if (value?.type === 'choice' && typeof value.choice === 'string') return value.choice;
+  return null;
 }

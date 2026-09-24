@@ -1,7 +1,7 @@
 import { createGateway, experimental_evaluate as evaluate } from 'ai';
 import type { JevProvider, JevProviderOptions, JevEvaluationState } from './types.js';
 import { buildProfileQuestions, summarizeState } from './questions.js';
-import { normalizeProfile, unavailableDecision } from './normalize.js';
+import { normalizeProfile, unavailableDecision, choiceFromAnswers } from './normalize.js';
 import type { ProfilerDecision } from '../schemas/profiler.js';
 
 function confidenceFromAnswer(answer: {
@@ -42,7 +42,6 @@ export function createVercelAiGatewayProvider(options: JevProviderOptions): JevP
 
         const risk = result.answers.risk_level;
         const depth = result.answers.review_depth;
-        const check = result.answers.recommended_check;
         if (!risk || risk.type !== 'choice' || typeof risk.choice !== 'string') {
           throw new Error('SCHEMA_REJECTED: missing risk_level choice');
         }
@@ -56,14 +55,21 @@ export function createVercelAiGatewayProvider(options: JevProviderOptions): JevP
           }
         ).providerMetadata?.typesafe?.confidence?.risk_level;
 
+        const answers = result.answers as Record<
+          string,
+          { type?: string; choice?: string; probability?: number }
+        >;
+
         return normalizeProfile(
           {
             riskLevel: risk.choice,
             reviewDepth: depth.choice,
-            recommendedCheck:
-              check?.type === 'choice' && typeof check.choice === 'string'
-                ? check.choice
-                : null,
+            recommendedChecks: [
+              choiceFromAnswers(answers, 'recommended_check_primary'),
+              choiceFromAnswers(answers, 'recommended_check_secondary'),
+              choiceFromAnswers(answers, 'recommended_check_tertiary'),
+              choiceFromAnswers(answers, 'recommended_check'),
+            ],
             confidence:
               typeof typesafeConfidence === 'number'
                 ? typesafeConfidence

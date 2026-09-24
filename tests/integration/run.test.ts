@@ -40,7 +40,9 @@ describe('Jev providers + runProfiler', () => {
         answers: {
           risk_level: { type: 'choice', choice: 'HIGH', confidence: 0.91 },
           review_depth: { type: 'choice', choice: 'EXPERT' },
-          recommended_check: { type: 'choice', choice: 'security_scan' },
+          recommended_check_primary: { type: 'choice', choice: 'security_scan' },
+          recommended_check_secondary: { type: 'choice', choice: 'secrets_scan' },
+          recommended_check_tertiary: { type: 'choice', choice: 'unit_tests' },
           abstain: { type: 'boolean', probability: 0.1 },
           request_review: { type: 'boolean', probability: 0.1 },
         },
@@ -71,7 +73,9 @@ describe('Jev providers + runProfiler', () => {
     expect(result.outcome.status).toBe('ok');
     expect(result.decision.risk_level).toBe('HIGH');
     expect(result.decision.review_depth).toBe('EXPERT');
-    expect(result.decision.recommended_checks).toContain('security_scan');
+    expect(result.decision.recommended_checks).toEqual(
+      expect.arrayContaining(['security_scan', 'secrets_scan', 'unit_tests']),
+    );
   });
 
   it('applies deterministic floor when provider is unavailable', async () => {

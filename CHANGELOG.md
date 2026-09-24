@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-24
+
+### Added
+
+* Jev now returns up to three typed recommended checks (`primary` / `secondary` / `tertiary`), merged with risk defaults
+
 ## [0.2.3] — 2026-09-24
 
 ### Changed
