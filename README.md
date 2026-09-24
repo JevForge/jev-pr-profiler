@@ -1,5 +1,7 @@
 # JEV Pull Request Profiler
 
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-JEV%20Pull%20Request%20Profiler-blue)](https://github.com/marketplace/actions/jev-pull-request-profiler)
+
 GitHub Action that evaluates pull request complexity and blast radius with **Jev**, then recommends a stable `risk_level`, `review_depth`, and allowlisted `recommended_checks`.
 
 It **never** approves, merges, or blocks merge on its own. Downstream workflows decide what to do with the outputs.

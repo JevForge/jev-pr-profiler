@@ -1,5 +1,5 @@
 name: JEV Pull Request Profiler
-description: Profile PR complexity and risk with Jev. Recommends risk level, review depth, and required checks — never merges or blocks on its own.
+description: Profile PR complexity and risk with Jev. Recommends risk level, review depth, and required checks.
 author: JevForge
 branding:
   icon: eye

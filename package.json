@@ -1,7 +1,7 @@
 {
   "name": "jev-pr-profiler",
   "version": "0.1.0",
-  "description": "GitHub Action that profiles pull request complexity and risk with Jev, recommending review depth and checks.",
+  "description": "Profile PR complexity and risk with Jev. Recommends risk level, review depth, and required checks.",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "all": "npm run typecheck && npm run test:coverage && npm run build"
+    "all": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [
     "github-actions",
